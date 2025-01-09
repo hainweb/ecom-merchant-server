@@ -9,7 +9,7 @@ const verifyLogin = (req, res, next) => {
   if (req.session.SuperAdmin && req.session.SuperAdmin.loggedin) {
     next()
   } else {
-    res.redirect('/SuperAdmin/login')
+    res.redirect('/superAdmin/login')
   }
 }
 
@@ -20,7 +20,7 @@ router.get('/',verifyLogin, (req, res, next) => {
 })
 router.get('/login', (req, res) => {
   let info = req.session.superLoginErr
-  res.render('SuperAdmin/login', { SuperAdmin: true, info })
+  res.render('superAdmin/login', { SuperAdmin: true, info })
   req.session.superLoginErr = false
 })
 
@@ -29,17 +29,17 @@ router.post('/login', (req, res) => {
     if (response.status) {
       req.session.SuperAdmin = { loggedin: true, ...response.SuperAdmin }
 
-      res.redirect('/SuperAdmin/')
+      res.redirect('/superAdmin/')
     } else {
       req.session.superLoginErr = response.loginErr
-      res.redirect('/SuperAdmin/login')
+      res.redirect('/superAdmin/login')
     }
   })
 })
 router.get('/logout', (req, res) => {
   req.session.SuperAdmin = null
 
-  res.redirect('/SuperAdmin/login')
+  res.redirect('/superAdmin/login')
 })
 
 /* router.get('/signup',verifyLogin, (req, res) => {
@@ -85,10 +85,10 @@ router.post('/deliverysignup',verifyLogin, (req, res) => {
   deliveryHelpers.doSignup(req.body).then((response) => {
     if (response.status) {
       req.session.deliverySignupInfo = 'Login success'
-      res.redirect('/SuperAdmin')
+      res.redirect('/superAdmin')
     } else {
       req.session.deliverySignupInfo = 'This number is already taken'
-      res.redirect('/SuperAdmin/deliverysignup')
+      res.redirect('/superAdmin/deliverysignup')
     }
 
   })
@@ -100,7 +100,7 @@ router.get('/all-admins',verifyLogin, async (req, res) => {
 })
 router.get('/all-delivery',verifyLogin, async (req, res) => {
   let allDelivery = await SuperAdminHelpers.getAllDelivery()
-  res.render('SuperAdmin/all-delivery', { SuperAdmin: true, allDelivery,superAdminsec:req.session.SuperAdmin })
+  res.render('superAdmin/all-delivery', { SuperAdmin: true, allDelivery,superAdminsec:req.session.SuperAdmin })
 })
 
 
