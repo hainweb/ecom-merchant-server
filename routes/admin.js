@@ -2,13 +2,14 @@ var express = require('express');
 var router = express.Router();
 var productHelpers = require('../helpers/product-helpers');
 const { ObjectId } = require('mongodb');
-const { response } = require('../app'); 
+const { response } = require('../app');
 var adminHelpers = require('../helpers/admin-helpers');
 const userHelpers = require('../helpers/user-helpers');
 const userDisplayHelpers = require('../helpers/userDisplay-helpers')
 
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const deliveryHelpers = require('../helpers/delivery-helpers');
 
 
 
@@ -47,15 +48,33 @@ const verifyLogin = (req, res, next) => {
   }
 }
 /* GET users listing. */
-router.get('/all-products', async function (req, res, next) {
 
+let totalInStock = 0;
+let totalLowStock = 0;
+let totalOutOfStock = 0;
+
+router.get('/all-products', async function (req, res, next) {
   const products = await productHelpers.getAllProducts();
+
   for (let product of products) {
     product.ordercount = await productHelpers.getOrdersCount(product._id);
   }
+
   console.log(req.session.adminsec);
 
+  // Send the response immediately
   res.json({ products });
+
+  // Run the stock calculations asynchronously to avoid delaying the response
+  setImmediate(() => {
+    products.forEach(product => product.Quantity = Number(product.Quantity));
+
+    totalInStock = products.filter(product => product.Quantity > 10).length;
+    totalLowStock = products.filter(product => product.Quantity <=10 && product.Quantity > 0).length;
+    totalOutOfStock = products.filter(product => product.Quantity <= 0).length;
+
+    //   console.log("Stock Counts Updated:", { totalInStock, totalLowStock, totalOutOfStock });
+  });
 });
 
 router.get('/login', (req, res) => {
@@ -84,14 +103,14 @@ router.post('/login', (req, res) => {
 router.get('/logout', (req, res) => {
   req.session.adminsec = null
   req.session.adminloggedIn = false
-  res.render('admin/login', { admin: true })
+  res.json({ status: true })
 })
 
 
 router.get('/get-admin', (req, res) => {
   console.log('sess', req.session.adminsec);
 
-  if (req.session.adminloggedIn) {
+  if (req.session.adminsec) {
     let admin = req.session.adminsec
     console.log('adminse', admin);
     res.json({ status: true, admin })
@@ -171,7 +190,15 @@ router.post('/add-product', async (req, res) => {
 });
 
 
+router.get('/get-product/:id', async (req, res) => {
+  let proId = req.params.id
+  console.log('id rp', proId);
 
+  let product = await productHelpers.getProductById(proId)
+
+  res.json(product)
+
+})
 
 
 
@@ -416,3 +443,81 @@ router.get('/ordered-products/:id', async (req, res) => {
   res.json(products)
 })
 module.exports = router;
+
+
+/* Anyanltics of admin panel*/
+
+router.get('/get-total-revenue', async (req, res) => {
+  console.log('APi call to get revenue ');
+
+  adminHelpers.getTotalRevenue().then((response) => {
+    console.log('geted totall result ', response);
+
+    let pendingOrders = (response.totalOrders - response.canceledOrders - response.deliveredOrders)
+    console.log('Pending orders', pendingOrders);
+
+    let pendingCashToAdmin = (response.deliveredOrders - response.cashToAdminOrders)
+    console.log('Pending cash', pendingCashToAdmin);
+
+
+    let conversionRate = parseFloat(((response.totalOrderedProducts / response.totalUser) * 100).toFixed(2));
+    console.log('conversion rate', conversionRate);
+    
+    let averageOrderValue = parseFloat((response.deliveredRevenue / response.deliveredOrders).toFixed(2));
+    console.log('Average order value', averageOrderValue);
+    
+
+    console.log("Total In Stock:", totalInStock);
+    console.log("Total Low Stock:", totalLowStock);
+    console.log("Total Out of Stock:", totalOutOfStock);
+
+    res.json({ pendingOrders, pendingCashToAdmin, ...response, conversionRate, averageOrderValue, totalInStock, totalLowStock, totalOutOfStock })
+
+  })
+})
+
+
+router.get('/get-revenue-trend', (req, res) => {
+  console.log('api call to revenue trend', req.query);
+  adminHelpers.getRevenueTrend(req.query).then((response) => {
+    console.log('geted tevenue trend', response);
+    res.json(response)
+  })
+
+})
+
+
+router.get('/get-user-activity', (req, res) => {
+  console.log('api call to user actiovity', req.query);
+
+  adminHelpers.getUserActivity(req.query).then((response) => {
+    console.log('user activeity', response);
+
+    res.json(response)
+  })
+
+})
+
+
+router.get('/get-total-orders', async (req, res) => {
+  console.log('api call to total orders');
+  let orders = await deliveryHelpers.getOrders()
+  res.json(orders)
+
+
+})
+
+router.get('/get-products-category', (req, res) => {
+  console.log('API call to category products');
+
+  adminHelpers.getCategoriesProducts()
+    .then((result) => {
+      console.log('Products total by category:', result);
+      // Send the result as JSON back to the client
+      res.json(result);
+    })
+    .catch((error) => {
+      console.error('Error in getCategoriesProducts:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    });
+});

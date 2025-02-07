@@ -3,7 +3,7 @@ const state = { db: null };
 
 module.exports.connect = async function (done) {
   const url = process.env.MONGO_URI;
-  const dbname = 'shopping';  
+  const dbname = 'shopping2';  
 
   try {
     const client = await MongoClient.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });

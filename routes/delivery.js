@@ -9,12 +9,28 @@ const verifyLogin = (req, res, next) => {
         next()
     } else {
         res.redirect('/delivery/login')
-    }
+    } 
 }
 
 router.get('/', verifyLogin, async function (req, res, next) {
     let orders = await deliveryHelpers.getOrders()
     deliverDetails = req.session.deliveryNm
+    console.log('orders',orders);
+      // Sorting: Pending first, then in-progress, then completed, then canceled
+      orders.sort((a, b) => {
+        const statusOrder = {
+            "Pending": 1,
+            "Product take from godown": 2,
+            "Product Delivered": 3,
+            "Completed": 4,
+            "Canceled": 5  // Canceled orders go last
+        };
+
+        let statusA = a.cancel ? "Canceled" : a.cashadmin ? "Completed" : a.status3 ? "Product Delivered" : a.status2 ? "Product take from godown" : "Pending";
+        let statusB = b.cancel ? "Canceled" : b.cashadmin ? "Completed" : b.status3 ? "Product Delivered" : b.status2 ? "Product take from godown" : "Pending";
+
+        return statusOrder[statusA] - statusOrder[statusB];
+    });
     res.render('delivery/view-products', { isDelivery: true, orders, deliverDetails })
 })
 router.get('/shipping/:id',verifyLogin, async (req, res) => {

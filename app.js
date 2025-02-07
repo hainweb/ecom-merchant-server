@@ -24,7 +24,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true  // Allow credentials (cookies) to be sent with requests
 }));
-// View engine setup
+// View engine setup 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
 app.engine('hbs', hbs.engine({
@@ -68,11 +68,12 @@ const sessionMiddleware = session({
     touchAfter: 24 * 3600 // Time period in seconds between session updates
   }),
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
+  
 });
 // Add this before your routes
 app.set('trust proxy', 1);

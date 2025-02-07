@@ -1,12 +1,13 @@
 <section>
-    <div class="container">
+    <div class="ml-4">
         {{#if orders}}
         <h4>Ordered Items </h4>
-        <div class="container">
+        <div >
             <table class="table mt-5">
                 <thead>
 
                     <tr>
+                        <th>Date</th>
                         <th>Name</th>
                         <th>Mobile</th>
                         <th>Address</th>
@@ -24,17 +25,28 @@
                     {{#each orders}}
 
                     <tr>
+                         <td>{{this.date}}</td>
                         <td>{{this.deliveryDetails.name}}</td>
                         <td>{{this.deliveryDetails.mobile}}</td>
-                        <td>{{this.deliveryDetails.address}}, {{this.deliveryDetails.pinncode}}</td>
+                        <td>{{this.deliveryDetails.type}},{{this.deliveryDetails.state}},{{this.deliveryDetails.city}},{{this.deliveryDetails.address}}, {{this.deliveryDetails.pinncode}}</td>
                         {{#if total}}
                         <td>{{this.total}}</td>
                         {{else}}
                         <td>{{this.product.Price}}</td>
                         {{/if}}
-                        <td>{{this.paymentMethod}}</td>
-                       <td id="status-{{this._id}}">{{this.status}}, {{this.status2}}, {{this.status3}}, {{this.cashadmin}}</td>
-
+                        <td>{{#if this.paymentMethod}} {{this.paymentMethod}} {{else}} COD {{/if}}</td>
+                         <td id="status-{{this._id}}"> 
+                             {{#if this.cashadmin}}
+                           Completed
+                            {{else if this.status3}}
+                            Product Delivered
+                            {{else if this.status2}}
+                          Product take from godown
+                            {{else}}
+                            Pending
+                            {{/if}}
+                            </td>
+                       
                         <td>
                             {{#if this.cashadmin}}
                             <button id="btn-{{this._id}}" class="btn btn-dark" disabled>Completed</button>
@@ -44,6 +56,8 @@
                             {{else if this.status2}}
                             <button id="btn-{{this._id}}" class="btn btn-success"
                                 onclick="addDelivering('{{this._id}}')">Delivery</button>
+                                {{else if this.cancel}}
+                            <p  class="btn btn-danger">Order canceled</p>
                             {{else}}
                             <button id="btn-{{this._id}}" class="btn btn-primary"
                                 onclick="addShipping('{{this._id}}')">Shipped</button>
