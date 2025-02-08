@@ -19,10 +19,11 @@ var session = require('express-session');
 const router = express.Router();
 // CORS Middleware should be placed before route definitions 
 app.use(cors({
-  origin:[process.env.FRONTEND_URL], // Your frontend URL
+  origin: process.env.FRONTEND_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true  // Allow credentials (cookies) to be sent with requests
+  allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie'],
+  credentials: true,
+  exposedHeaders: ['Set-Cookie']
 }));
 // View engine setup 
 app.set('views', path.join(__dirname, 'views'));
@@ -62,20 +63,19 @@ const sessionMiddleware = session({
   saveUninitialized: false,
   store: MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
-    collectionName: 'sessions', 
-    ttl: 24 * 60 * 60, // Session TTL (1 day)
-    autoRemove: 'native', 
-    touchAfter: 24 * 3600 // Time period in seconds between session updates
+    collectionName: 'sessions',
+    ttl: 24 * 60 * 60,
+    autoRemove: 'native',
+    touchAfter: 24 * 3600
   }),
   cookie: {
-  secure: process.env.NODE_ENV === 'production',
-  httpOnly: true,
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined,
-  maxAge: 24 * 60 * 60 * 1000
-}
-
-  
+    secure: process.env.NODE_ENV === 'production', // true in production
+    httpOnly: true,
+    sameSite: 'none', // Important for cross-origin requests
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    path: '/'
+  },
+  proxy: true // Add this for proper proxy handling
 });
 // Add this before your routes
 app.set('trust proxy', 1);
