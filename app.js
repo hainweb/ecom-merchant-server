@@ -19,10 +19,11 @@ var session = require('express-session');
 const router = express.Router();
 // CORS Middleware should be placed before route definitions 
 app.use(cors({
-  origin:[process.env.FRONTEND_URL], // Your frontend URL
+  origin: process.env.FRONTEND_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true  // Allow credentials (cookies) to be sent with requests
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'multipart/form-data'],
+  credentials: true,
+  exposedHeaders: ['set-cookie']
 }));
 // View engine setup 
 app.set('views', path.join(__dirname, 'views'));
