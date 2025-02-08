@@ -74,7 +74,7 @@ const sessionConfig = {
     httpOnly: true,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000,
-    domain: process.env.NODE_ENV === 'production' ? 'https://adminpanel-kingcart-backend-22.onrender.com' : undefined
+    domain: process.env.NODE_ENV === 'production' ? 'adminpanel-kingcart-backend-22.onrender.com' : undefined
   }
 };
 
