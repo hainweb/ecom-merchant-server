@@ -1,6 +1,5 @@
 require('dotenv').config(); // Load .env file
 
- 
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
@@ -17,18 +16,26 @@ var fileUpload = require('express-fileupload');
 var db = require('./config/connection');
 var session = require('express-session'); 
 const router = express.Router();
-// CORS Middleware should be placed before route definitions 
+
+// Trust first proxy for secure cookies
+app.set('trust proxy', 1);
+
+// CORS configuration - must be before routes
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
+  credentials: true
 }));
+
 // View engine setup 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
 app.engine('hbs', hbs.engine({
-  extname: 'hbs', defaultLayout: 'layout', layoutsDir: __dirname + '/views/layout/', partialsDir: __dirname + '/views/partials/',
+  extname: 'hbs', 
+  defaultLayout: 'layout', 
+  layoutsDir: __dirname + '/views/layout/', 
+  partialsDir: __dirname + '/views/partials/',
   helpers: {
     lt: function (v1, v2) {
       return v1 < v2;
@@ -41,10 +48,11 @@ app.engine('hbs', hbs.engine({
     }
   }
 }));
+
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser(process.env.SESSION_SECRET)); // Use same secret as session
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(fileUpload({
@@ -52,57 +60,58 @@ app.use(fileUpload({
   tempFileDir: '/tmp/',
 }));
 
-
 router.use(fileUpload());
-console.log('Environment:', app.get('env')); // Should print 'production' on Render
-// Session configuration (add this before your routes)
-const sessionMiddleware = session({
+
+// Session configuration - updated for better production support
+const sessionConfig = {
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
-    collectionName: 'sessions', 
-    ttl: 24 * 60 * 60, // Session TTL (1 day)
-    autoRemove: 'native', 
-    touchAfter: 24 * 3600 // Time period in seconds between session updates
+    collectionName: 'sessions',
+    ttl: 24 * 60 * 60,
+    autoRemove: 'native',
+    touchAfter: 24 * 3600
   }),
+  name: 'sessionId', // Custom cookie name
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production', // Must be true in production
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Critical for cross-origin
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    domain: process.env.NODE_ENV === 'production' ? 'https://king-cart-adminpanel.onrender.com' : undefined // Update with your domain
   }
-  
-});
-// Add this before your routes
-app.set('trust proxy', 1);
-app.use(sessionMiddleware);
+};
+
+app.use(session(sessionConfig));
+
 // Database connection
 db.connect((err) => {
   if (err) {
     console.log('Database not connected' + err);
   } else {
-    console.log('Database Connected ');
+    console.log('Database Connected');
   }
 });
-// Route handling
+
+// Routes
 app.use('/admin', adminRouter);
 app.use('/delivery', deliverRouter);
 app.use('/superAdmin', superAdminRouter);
-// Static public directory
 app.use('/public', express.static(path.join(__dirname, 'public')));
-// Catch 404 and forward to error handler
+
+// 404 handler
 app.use(function (req, res, next) {
   next(createError(404));
 });
+
 // Error handler
 app.use(function (err, req, res, next) {
-  // Set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
-  // Render the error page
   res.status(err.status || 500);
   res.render('error');
 });
+
 module.exports = app;
