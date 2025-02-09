@@ -64,19 +64,20 @@ const sessionConfig = {
   store: MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
     collectionName: 'sessions',
-    ttl: 24 * 60 * 60,
+    ttl: 30 * 24 * 60 * 60, // 30 days in seconds
     autoRemove: 'native',
-    touchAfter: 24 * 360
+    touchAfter: 24 * 3600 // Touch session every 24 hours
   }),
   name: 'sessionId',
   cookie: {
     secure: process.env.NODE_ENV === 'production', // true in production
     httpOnly: true,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
     domain: process.env.NODE_ENV === 'production' ? 'adminpanel-kingcart-backend-22.onrender.com' : undefined
   }
 };
+
 
 app.use(session(sessionConfig));
 
