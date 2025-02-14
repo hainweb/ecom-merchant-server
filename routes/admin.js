@@ -86,20 +86,56 @@ router.get('/login', (req, res) => {
   }
 
 })
+
 router.post('/login', (req, res) => {
+  // Check if the admin lockout period has expired
+  if (req.session.adminLockedOutUntil && req.session.adminLockedOutUntil <= Date.now()) {
+    req.session.adminFailedAttempts = 0; // Reset failed attempts after lockout expires
+    req.session.adminLockedOutUntil = null; // Clear lockout status
+  }
+
+  // Check if the admin is currently locked out
+  if (req.session.adminLockedOutUntil && req.session.adminLockedOutUntil > Date.now()) {
+    const timeLeft = Math.ceil((req.session.adminLockedOutUntil - Date.now()) / 1000); // time left in seconds
+    return res.json({ 
+      status: false, 
+      timeLeft, 
+      message: `Too many failed attempts. Try again in ${timeLeft} seconds.` 
+    });
+  }
+
+  // Ensure adminFailedAttempts are initialized
+  if (!req.session.adminFailedAttempts) {
+    req.session.adminFailedAttempts = 0;
+  }
+
   adminHelpers.doadminLogin(req.body).then((response) => {
     if (response.status) {
-      req.session.adminloggedIn = true
-      req.session.adminsec = response.admin
-      console.log('admin lofing', req.session.adminsec, req.session.adminloggedIn);
-
-      res.json(response)
+      req.session.adminloggedIn = true;
+      req.session.adminsec = response.admin;
+      req.session.adminFailedAttempts = 0; // Reset on successful login
+      console.log('admin logging in', req.session.adminsec, req.session.adminloggedIn);
+      res.json(response);
     } else {
-      req.session.adminloginErr = "Invalid username or password"
-      res.json(response)
+      req.session.adminFailedAttempts += 1; // Increment failed attempts
+
+      // Lock out after 10 failed attempts
+      if (req.session.adminFailedAttempts >= 10) {
+        req.session.adminLockedOutUntil = Date.now() + 2 * 60 * 1000; // 2 minutes lockout
+        return res.json({ 
+          status: false, 
+          timeLeft: 120, 
+          message: 'Too many failed attempts. Please try again in 2 minutes.' 
+        });
+      } else {
+        req.session.adminloginErr = "Invalid username or password";
+        res.json({ status: false, message: req.session.adminloginErr });
+      }
     }
-  })
-})
+  });
+});
+
+
 router.get('/logout', (req, res) => {
   req.session.adminsec = null
   req.session.adminloggedIn = false
