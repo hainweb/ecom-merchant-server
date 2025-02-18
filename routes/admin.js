@@ -538,6 +538,7 @@ router.get('/get-user-activity', (req, res) => {
 router.get('/get-total-orders', async (req, res) => {
   console.log('api call to total orders');
   let orders = await deliveryHelpers.getOrders()
+  console.log("orders is ", orders)
   res.json(orders)
 
 
