@@ -496,7 +496,7 @@ router.get('/get-total-revenue', async (req, res) => {
     console.log('Pending cash', pendingCashToAdmin);
 
 
-    let conversionRate = parseFloat(((response.totalOrderedProducts / response.totalUser) * 100).toFixed(2));
+    let conversionRate = parseFloat(((response.deliveredOrders / response.totalUser) * 100).toFixed(2));
     console.log('conversion rate', conversionRate);
     
     let averageOrderValue = parseFloat((response.deliveredRevenue / response.deliveredOrders).toFixed(2));
