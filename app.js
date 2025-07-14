@@ -1,4 +1,3 @@
-require('dotenv').config(); // Load .env file
 
 const createError = require('http-errors');
 const express = require('express');
@@ -13,6 +12,7 @@ const session = require('express-session');
 
 const adminRouter = require('./routes/admin');
 const db = require('./config/connection');
+require('dotenv').config(); 
 
 const app = express(); 
  
