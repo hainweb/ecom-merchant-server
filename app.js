@@ -6,22 +6,20 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const cors = require('cors');
-const MongoStore = require('connect-mongo');
+const MongoStore = require('connect-mongo'); 
 const hbs = require('express-handlebars');
 const fileUpload = require('express-fileupload');
 const session = require('express-session');
 
 const adminRouter = require('./routes/admin');
-const deliverRouter = require('./routes/delivery');
-const superAdminRouter = require('./routes/superAdmin');
 const db = require('./config/connection');
 
-const app = express();
-
+const app = express(); 
+ 
 // Trust first proxy for secure cookies
 app.set('trust proxy', 1);
 
-// CORS configuration – must be before routes
+// CORS configuration
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -34,7 +32,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
 app.engine('hbs', hbs.engine({
   extname: 'hbs',
-  defaultLayout: 'layout',
+  defaultLayout: 'layout', 
   layoutsDir: path.join(__dirname, 'views', 'layout'),
   partialsDir: path.join(__dirname, 'views', 'partials'),
   helpers: {
@@ -74,7 +72,7 @@ const sessionConfig = {
     httpOnly: true,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
-    domain: process.env.NODE_ENV === 'production' ? 'adminpanel-kingcart-backend-22.onrender.com' : undefined
+    domain: process.env.NODE_ENV === 'production' ? 'https://ecommerce-king-cart.onrender.com' : undefined
   }
 };
 
@@ -92,8 +90,6 @@ db.connect((err) => {
 
 // Routes
 app.use('/admin', adminRouter);
-app.use('/delivery', deliverRouter);
-app.use('/superAdmin', superAdminRouter);
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // 404 handler
