@@ -72,7 +72,7 @@ const sessionConfig = {
     httpOnly: true,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
-    domain: process.env.NODE_ENV === 'production' ? 'https://ecommerce-king-cart.onrender.com' : undefined
+    domain: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : undefined
   }
 };
 
