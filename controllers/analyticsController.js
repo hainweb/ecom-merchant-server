@@ -1,4 +1,3 @@
-// controllers/analyticsController.js
 const adminHelpers = require("../helpers/admin-helpers");
 const orderHelpers = require("../helpers/order-helpers");
 const productHelpers = require("../helpers/product-helpers");
@@ -46,7 +45,6 @@ exports.getRevenueTrend = (req, res) => {
     .catch((err) => res.status(500).json({ error: err }));
 };
 
-
 exports.getAdminOrders = async (req, res) => {
   const orders = await orderHelpers.getAdminOrders(req.session.adminsec._id);
   res.json(orders);
@@ -69,7 +67,6 @@ exports.getShippingStatus = async (req, res) => {
     );
     res.json(data);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Error fetching shipping status" });
   }
 };
