@@ -3,7 +3,6 @@ var collection = require("../config/collection");
 var bcrypt = require("bcrypt");
 const { ObjectId } = require("mongodb");
 const { response } = require("../app");
-//const { reject } = require('bcrypt/promises');
 
 module.exports = {
   doadminSignup: (adminData) => {
@@ -14,12 +13,12 @@ module.exports = {
         .collection(collection.ADMIN_COLLECTION)
         .findOne({ Mobile: adminData.Mobile });
       if (!adminExists) {
-        adminData.Password = await bcrypt.hash(adminData.Password, 10); // Hash the password
+        adminData.Password = await bcrypt.hash(adminData.Password, 10);
         db.get()
           .collection(collection.ADMIN_COLLECTION)
           .insertOne(adminData)
           .then((data) => {
-            response1.admin = adminData; // Return user data
+            response1.admin = adminData;
             response1.status = true;
             resolve(response1);
           });
@@ -40,17 +39,14 @@ module.exports = {
       if (admin) {
         bcrypt.compare(adminData.Password, admin.Password).then((status) => {
           if (status) {
-            console.log("Login success");
             response.admin = admin;
             response.status = true;
             resolve(response);
           } else {
-            console.log("Login failed pss error");
             resolve({ status: false });
           }
         });
       } else {
-        console.log("No user found");
         resolve({ status: false });
       }
     });
@@ -76,21 +72,19 @@ module.exports = {
   getAllUsers: () => {
     return new Promise(async (resolve, reject) => {
       try {
-        // Fetch all users
         let users = await db
           .get()
           .collection(collection.USER_COLLECTION)
           .find()
           .toArray();
 
-        // For each user, fetch their order count
         for (let user of users) {
           let orderCount = await db
             .get()
             .collection(collection.ORDER_COLLECTION)
             .find({ userId: new ObjectId(user._id) })
-            .count(); // Counting orders for each user
-          user.orderCount = orderCount; // Assign the order count to each user
+            .count();
+          user.orderCount = orderCount;
         }
 
         resolve(users);
@@ -102,7 +96,6 @@ module.exports = {
 
   getTotalRevenue: (adminId) => {
     return new Promise((resolve, reject) => {
-      // Order-level aggregation (without $unwind) that calculates order-level totals
       db.get()
         .collection(collection.ORDER_COLLECTION)
         .aggregate([
@@ -183,7 +176,6 @@ module.exports = {
         ])
         .toArray()
         .then((orderStats) => {
-          // Category-wise aggregation (with $unwind) to get product-level details
           db.get()
             .collection(collection.ORDER_COLLECTION)
             .aggregate([
@@ -240,12 +232,10 @@ module.exports = {
             ])
             .toArray()
             .then((categoryStats) => {
-              // Count total users from the USER_COLLECTION
               db.get()
                 .collection(collection.USER_COLLECTION)
                 .countDocuments()
                 .then((userCount) => {
-                  // Merge all results into one final result object
                   const result = {
                     ...orderStats[0],
                     totalUser: userCount,
@@ -264,12 +254,10 @@ module.exports = {
   getRevenueTrend: (filter, adminId) => {
     return new Promise(async (resolve, reject) => {
       try {
-        // Destructure the provided filter object.
         const { year, dateRange } = filter;
         const today = new Date();
         let startDate, endDate;
 
-        // Prepare the date boundaries based on the dateRange.
         if (dateRange === "Last 7 days") {
           // Last 7 days: today and the previous 6 days.
           endDate = today;
@@ -281,18 +269,13 @@ module.exports = {
           startDate = new Date();
           startDate.setDate(today.getDate() - 29);
         } else if (dateRange === "In this year") {
-          // Use the passed year to get the full year range.
           startDate = new Date(`${year}-01-01T00:00:00Z`);
           endDate = new Date(`${year}-12-31T23:59:59Z`);
         } else {
-          // If none of the expected dateRange strings, you could set defaults.
           startDate = new Date(0);
           endDate = today;
         }
 
-        // Begin building the aggregation pipeline.
-        // First, we match delivered orders and convert the string date field
-        // into an actual Date as well as converting total to a double.
         const pipeline = [
           {
             $match: {
@@ -324,7 +307,6 @@ module.exports = {
           },
         ];
 
-        // Build further grouping/projection stages based on the dateRange.
         if (dateRange === "Last 7 days") {
           pipeline.push(
             // Group orders by day of week and sum revenue
@@ -341,7 +323,7 @@ module.exports = {
                 revenue: 1,
               },
             },
-            // Combine the actual results with a default array for all seven days.
+
             {
               $group: {
                 _id: null,
@@ -350,7 +332,6 @@ module.exports = {
             },
             {
               $project: {
-                // The default array covers Sun (1) through Sat (7) with revenue: 0.
                 data: {
                   $concatArrays: [
                     [
@@ -368,7 +349,7 @@ module.exports = {
               },
             },
             { $unwind: "$data" },
-            // Group again by dayOfWeek so that if any revenue exists it will be summed over the default (zero) value.
+
             {
               $group: {
                 _id: "$data.dayOfWeek",
@@ -387,7 +368,6 @@ module.exports = {
           );
         } else if (dateRange === "Last 30 days") {
           pipeline.push(
-            // Group by day of month
             {
               $group: {
                 _id: { day: { $dayOfMonth: "$orderDate" } },
@@ -401,7 +381,7 @@ module.exports = {
                 revenue: 1,
               },
             },
-            // Combine with a default array for days 1 through 31.
+
             {
               $group: {
                 _id: null,
@@ -484,7 +464,7 @@ module.exports = {
                 value: "$revenue",
               },
             },
-            // Merge the grouped revenue with an array of all 12 months (defaulting missing months to zero).
+
             {
               $group: {
                 _id: null,
@@ -534,7 +514,6 @@ module.exports = {
           );
         }
 
-        // Execute the aggregation.
         const result = await db
           .get()
           .collection(collection.ORDER_COLLECTION)
@@ -931,83 +910,107 @@ module.exports = {
       // 2) Run your aggregation exactly as before, which produces:
       //    [ { date: "2025-07-03", pending:1,shipped:2,delivered:0 }, ... ]
       const raw = await db
-  .get()
-  .collection(collection.ORDER_COLLECTION)
-  .aggregate([
-    // 1) Parse all three dates into real Dates
-    {
-      $addFields: {
-        // order date
-        dateOnlyString: { $arrayElemAt: [{ $split: ["$date", " at"] }, 0] },
-        // shipped date
-        shipDateOnly:   { $arrayElemAt: [{ $split: ["$shipedDate", " at"] }, 0] },
-        // delivered date
-        delivDateOnly:  { $arrayElemAt: [{ $split: ["$deliveredDate", " at"] }, 0] }
-      }
-    },
-    {
-      $addFields: {
-        parsedOrderDate: {
-          $dateFromString: { dateString: "$dateOnlyString", format: "%B %d, %Y" }
-        },
-        parsedShipDate: {
-          $dateFromString: { dateString: "$shipDateOnly", format: "%B %d, %Y" }
-        },
-        parsedDelivDate: {
-          $dateFromString: { dateString: "$delivDateOnly", format: "%B %d, %Y" }
-        }
-      }
-    },
+        .get()
+        .collection(collection.ORDER_COLLECTION)
+        .aggregate([
+          // 1) Parse all three dates into real Dates
+          {
+            $addFields: {
+              // order date
+              dateOnlyString: {
+                $arrayElemAt: [{ $split: ["$date", " at"] }, 0],
+              },
+              // shipped date
+              shipDateOnly: {
+                $arrayElemAt: [{ $split: ["$shipedDate", " at"] }, 0],
+              },
+              // delivered date
+              delivDateOnly: {
+                $arrayElemAt: [{ $split: ["$deliveredDate", " at"] }, 0],
+              },
+            },
+          },
+          {
+            $addFields: {
+              parsedOrderDate: {
+                $dateFromString: {
+                  dateString: "$dateOnlyString",
+                  format: "%B %d, %Y",
+                },
+              },
+              parsedShipDate: {
+                $dateFromString: {
+                  dateString: "$shipDateOnly",
+                  format: "%B %d, %Y",
+                },
+              },
+              parsedDelivDate: {
+                $dateFromString: {
+                  dateString: "$delivDateOnly",
+                  format: "%B %d, %Y",
+                },
+              },
+            },
+          },
 
-    // 2) Unwind products and filter by adminId
-    { $unwind: "$products" },
-    { $match: { "products.product.adminId": adminId } },
+          // 2) Unwind products and filter by adminId
+          { $unwind: "$products" },
+          { $match: { "products.product.adminId": adminId } },
 
-    // 3) Create a statuses array: one entry per status with its own date
-    {
-      $project: {
-        statuses: [
-          { type: "pending",   date: "$parsedOrderDate" },
-          { type: "shipped",   date: "$parsedShipDate"   },
-          { type: "delivered", date: "$parsedDelivDate"  }
-        ]
-      }
-    },
+          // 3) Create a statuses array: one entry per status with its own date
+          {
+            $project: {
+              statuses: [
+                { type: "pending", date: "$parsedOrderDate" },
+                { type: "shipped", date: "$parsedShipDate" },
+                { type: "delivered", date: "$parsedDelivDate" },
+              ],
+            },
+          },
 
-    // 4) Unwind that array into separate documents
-    { $unwind: "$statuses" },
+          // 4) Unwind that array into separate documents
+          { $unwind: "$statuses" },
 
-    // 5) Filter only those status‐events whose date falls in your range
-    {
-      $match: {
-        "statuses.date": { $gte: startDate, $lte: endDate }
-      }
-    },
+          // 5) Filter only those status‐events whose date falls in your range
+          {
+            $match: {
+              "statuses.date": { $gte: startDate, $lte: endDate },
+            },
+          },
 
-    // 6) Group by the date string and sum each type
-    {
-      $group: {
-        _id: { $dateToString: { format: "%Y-%m-%d", date: "$statuses.date" } },
-        pending:   { $sum: { $cond: [{ $eq: ["$statuses.type", "pending"]}, 1, 0] } },
-        shipped:   { $sum: { $cond: [{ $eq: ["$statuses.type", "shipped"]}, 1, 0] } },
-        delivered: { $sum: { $cond: [{ $eq: ["$statuses.type", "delivered"]}, 1, 0] } }
-      }
-    },
+          // 6) Group by the date string and sum each type
+          {
+            $group: {
+              _id: {
+                $dateToString: { format: "%Y-%m-%d", date: "$statuses.date" },
+              },
+              pending: {
+                $sum: { $cond: [{ $eq: ["$statuses.type", "pending"] }, 1, 0] },
+              },
+              shipped: {
+                $sum: { $cond: [{ $eq: ["$statuses.type", "shipped"] }, 1, 0] },
+              },
+              delivered: {
+                $sum: {
+                  $cond: [{ $eq: ["$statuses.type", "delivered"] }, 1, 0],
+                },
+              },
+            },
+          },
 
-    // 7) Project and sort
-    {
-      $project: {
-        _id: 0,
-        date: "$_id",
-        pending:   1,
-        shipped:   1,
-        delivered: 1
-      }
-    },
-    { $sort: { date: 1 } }
-  ])
-  .toArray();
-
+          // 7) Project and sort
+          {
+            $project: {
+              _id: 0,
+              date: "$_id",
+              pending: 1,
+              shipped: 1,
+              delivered: 1,
+            },
+          },
+          { $sort: { date: 1 } },
+        ])
+        .toArray();
 
       // 3) “Fill” in zeros for missing dates
       const filled = [];

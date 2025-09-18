@@ -2,7 +2,6 @@ var db = require("../config/connection");
 var collection = require("../config/collection");
 const cloudinary = require("cloudinary").v2;
 const { ObjectId } = require("mongodb");
-const { get, response } = require("../app");
 
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -12,9 +11,9 @@ cloudinary.config({
 
 function extractPublicId(url) {
   const parts = url.split("/");
-  const fileName = parts[parts.length - 1]; // e.g., "image-name.webp"
-  const publicId = fileName.split(".")[0]; // Remove the extension
-  return parts.slice(-3, -1).join("/") + "/" + publicId; // Recreate the full public ID
+  const fileName = parts[parts.length - 1];
+  const publicId = fileName.split(".")[0];
+  return parts.slice(-3, -1).join("/") + "/" + publicId;
 }
 
 module.exports = {
@@ -131,7 +130,7 @@ module.exports = {
     return new Promise(async (resolve, reject) => {
       try {
         const updateData = {
-          adminId: proDetails.adminId, // Assuming adminId is part of proDetails
+          adminId: proDetails.adminId,
           Name: proDetails.Name,
           Price: proDetails.Price,
           SellingPrice: proDetails.SellingPrice,
@@ -144,7 +143,6 @@ module.exports = {
           CustomOptions: proDetails.CustomOptions,
         };
 
-        // Only update image fields if new images were uploaded
         if (proDetails.thumbnailImage) {
           updateData.thumbnailImage = proDetails.thumbnailImage;
         }
@@ -171,15 +169,15 @@ module.exports = {
           .get()
           .collection(collection.ORDER_COLLECTION)
           .aggregate([
-            { $match: { "products.item": new ObjectId(proId) } }, // Match the specific product
-            { $unwind: "$products" }, // Deconstruct the products array
-            { $match: { "products.item": new ObjectId(proId) } }, // Match again after unwind
+            { $match: { "products.item": new ObjectId(proId) } },
+            { $unwind: "$products" },
+            { $match: { "products.item": new ObjectId(proId) } },
             {
               $group: {
                 _id: null,
                 totalQuantity: { $sum: "$products.quantity" },
               },
-            }, // Sum the quantity
+            },
           ])
           .toArray();
 
