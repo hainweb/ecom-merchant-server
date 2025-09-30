@@ -23,6 +23,7 @@ exports.login = async (req, res) => {
 
   try {
     const response = await adminHelpers.doadminLogin(req.body);
+
     if (response.status) {
       req.session.adminloggedIn = true;
       req.session.adminsec = response.admin;
@@ -37,6 +38,9 @@ exports.login = async (req, res) => {
           timeLeft: 120,
           message: "Too many failed attempts.",
         });
+      }
+      if (response.isBlock) {
+        return res.json({ status: false, message: "This account is blocked" });
       }
       return res.json({ status: false, message: "Invalid credentials." });
     }

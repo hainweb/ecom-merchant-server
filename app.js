@@ -1,57 +1,64 @@
-const createError = require('http-errors');
-const express = require('express');
-const path = require('path');
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
-const cors = require('cors');
-const MongoStore = require('connect-mongo'); 
-const hbs = require('express-handlebars');
-const fileUpload = require('express-fileupload');
-const session = require('express-session');
+const createError = require("http-errors");
+const express = require("express");
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const logger = require("morgan");
+const cors = require("cors");
+const MongoStore = require("connect-mongo");
+const hbs = require("express-handlebars");
+const fileUpload = require("express-fileupload");
+const session = require("express-session");
 
-const adminRouter = require('./routes/admin');
-const db = require('./config/connection');
-require('dotenv').config(); 
+const adminRouter = require("./routes/admin");
+const db = require("./config/connection");
+require("dotenv").config();
 
-const app = express(); 
- 
+const app = express();
+
 // Trust first proxy for secure cookies
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 // CORS configuration
-app.use(cors({
-  origin: ['https://king-cart-merchant.onrender.com'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: ["http://localhost:2000"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 
 // View engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'hbs');
-app.engine('hbs', hbs.engine({
-  extname: 'hbs',
-  defaultLayout: 'layout', 
-  layoutsDir: path.join(__dirname, 'views', 'layout'),
-  partialsDir: path.join(__dirname, 'views', 'partials'),
-  helpers: {
-    lt: (v1, v2) => v1 < v2,
-    eq: (v1, v2) => v1 === v2,
-    multiply: (v1, v2) => v1 * v2
-  }
-}));
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "hbs");
+app.engine(
+  "hbs",
+  hbs.engine({
+    extname: "hbs",
+    defaultLayout: "layout",
+    layoutsDir: path.join(__dirname, "views", "layout"),
+    partialsDir: path.join(__dirname, "views", "partials"),
+    helpers: {
+      lt: (v1, v2) => v1 < v2,
+      eq: (v1, v2) => v1 === v2,
+      multiply: (v1, v2) => v1 * v2,
+    },
+  })
+);
 
-app.use(logger('dev'));
+app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser(process.env.SESSION_SECRET));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
 // File upload configuration
-app.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: '/tmp/'
-}));
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+  })
+);
 
 // Session configuration
 const sessionConfig = {
@@ -60,37 +67,38 @@ const sessionConfig = {
   saveUninitialized: false,
   store: MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
-    collectionName: 'sessions',
+    collectionName: "sessions",
     ttl: 30 * 24 * 60 * 60, // 30 days in seconds
-    autoRemove: 'native',
-    touchAfter: 24 * 3600 // Touch session every 24 hours
+    autoRemove: "native",
+    touchAfter: 24 * 3600, // Touch session every 24 hours
   }),
-  name: 'sessionId',
+  name: "sessionId",
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // true in production
+    secure: process.env.NODE_ENV === "production", // true in production
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
-    domain: process.env.NODE_ENV === 'production' ? 'king-cart-merchant-server.onrender.com' : undefined
-
-  }
+    domain:
+      process.env.NODE_ENV === "production"
+        ? "seller.kingcart.shop"
+        : undefined,
+  },
 };
-
 
 app.use(session(sessionConfig));
 
 // Database connection
 db.connect((err) => {
   if (err) {
-    console.log('Database not connected: ' + err);
+    console.log("Database not connected: " + err);
   } else {
-    console.log('Database Connected');
+    console.log("Database Connected");
   }
 });
 
 // Routes
-app.use('/admin', adminRouter);
-app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use("/admin", adminRouter);
+app.use("/public", express.static(path.join(__dirname, "public")));
 
 // 404 handler
 app.use((req, res, next) => {
@@ -103,9 +111,9 @@ app.use((err, req, res, next) => {
     return next(err);
   }
   res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+  res.locals.error = req.app.get("env") === "development" ? err : {};
   res.status(err.status || 500);
-  res.render('error');
+  res.render("error");
 });
 
 module.exports = app;

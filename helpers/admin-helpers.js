@@ -38,10 +38,12 @@ module.exports = {
         .findOne({ Email: adminData.Email });
       if (admin) {
         bcrypt.compare(adminData.Password, admin.Password).then((status) => {
-          if (status) {
+          if (status && !admin.isBlock) {
             response.admin = admin;
             response.status = true;
             resolve(response);
+          } else if (admin.isBlock) {
+            resolve({ status: false, isBlock: true });
           } else {
             resolve({ status: false });
           }
