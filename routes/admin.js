@@ -19,6 +19,11 @@ router.post("/forgot-password", authCtrl.forgotPassword);
 router.post("/verify-otp", authCtrl.verifyOtp);
 router.post("/reset-password", authCtrl.resetPassword);
 
+router.post("/send-otp", authCtrl.sendOtp);
+router.post("/verify-merchant", authCtrl.verifyOtp, authCtrl.createMerchant);
+
+router.post('/mark-intro-seen',authCtrl.markIntroSeen)
+
 // --- PRODUCTS ---
 router.get("/all-products", productCtrl.allProducts);
 router.get("/admin-products", verifyLogin, productCtrl.adminProducts);
