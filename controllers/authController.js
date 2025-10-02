@@ -109,10 +109,23 @@ exports.forgotPassword = async (req, res) => {
   forgetPssOtp = Math.floor(100000 + Math.random() * 900000);
   try {
     await sendEmail({
-      to: email,
-      subject: "Reset OTP",
-      text: `Your OTP is ${forgetPssOtp}`,
-    });
+  to: email,
+  subject: "Reset Your Password",
+  html: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin:auto; padding:20px; border:1px solid #eaeaea; border-radius:10px; background-color:#f9f9f9; text-align:center;">
+      <h2 style="color:#333;">Password Reset Request</h2>
+      <p>Hello,</p>
+      <p>We received a request to reset your password. Please use the OTP below to proceed:</p>
+      <div style="margin: 20px 0; font-size: 24px; font-weight: bold; color: #e74c3c;">${forgetPssOtp}</div>
+      <p style="color: #555;">This OTP is valid for the next 10 minutes. Do not share it with anyone.</p>
+      <p style="margin-top: 30px;">If you did not request a password reset, please ignore this email.</p>
+      <p style="margin-top: 20px;">Best regards,<br/><strong>Admin Portal Team</strong></p>
+      <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;" />
+      <p style="font-size: 12px; color: #777;">For your security, do not share this OTP with anyone.</p>
+    </div>
+  `,
+});
+
     res.json({ status: true, message: "OTP sent." });
   } catch (e) {
     res.status(500).json({ status: false, message: "Failed to send OTP." });
@@ -129,13 +142,25 @@ exports.sendOtp = async (req, res) => {
     return res.json({ status: false, message: "This email is already exist" });
   }
   otp = Math.floor(100000 + Math.random() * 900000);
- 
+
   try {
     await sendEmail({
       to: email,
-      subject: "Email verification for Merchant account",
-      text: `Your OTP is ${otp}`,
+      subject: "Verify Your Merchant Account",
+      html: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin:auto; padding:20px; border:1px solid #eaeaea; border-radius:10px; background-color:#f9f9f9; text-align:center;">
+      <h2 style="color:#333;">Merchant Account Verification</h2>
+      <p>Hello,</p>
+      <p>Thank you for registering as a merchant. Please use the OTP below to verify your email address:</p>
+      <div style="margin: 20px 0; font-size: 24px; font-weight: bold; color: #2c7be5;">${otp}</div>
+      <p style="color: #555;">This OTP is valid for the next 10 minutes. Do not share it with anyone.</p>
+      <p style="margin-top: 30px;">Best regards,<br/><strong>Admin Portal Team</strong></p>
+      <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;" />
+      <p style="font-size: 12px; color: #777;">If you did not request this verification, please ignore this email.</p>
+    </div>
+  `,
     });
+
     res.json({ status: true, message: "OTP sent." });
   } catch (e) {
     res.status(500).json({ status: false, message: "Failed to send OTP." });
@@ -152,8 +177,29 @@ exports.createMerchant = async (req, res) => {
     req.session.adminFailedAttempts = 0;
     res.json({ status: true, message: "Merchant created" });
 
+    const htmlMessage = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px; background-color: #f9f9f9;">
+        <h2 style="color: #333;">Merchant Application Received</h2>
+        <p>Hello ${req.body.data.name || "Merchant"},</p>
+        <p>Thank you for submitting your merchant application. We have successfully received your request and our team will review it shortly.</p>
+        <p>We will notify you once your application has been reviewed.</p>
+        <p style="margin-top: 30px;">Best regards,<br/><strong>Admin Portal Team</strong></p>
+        <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;" />
+        <p style="font-size: 12px; color: #777;">If you did not submit this application, please ignore this email.</p>
+      </div>
+    `;
 
-    
+    sendEmail({
+      to: req.body.data.email,
+      subject: "Your Merchant Application Has Been Received",
+      html: htmlMessage,
+    })
+      .then(() => {
+        console.log("Application confirmation email sent successfully");
+      })
+      .catch((err) => {
+        console.error("Error sending application email:", err);
+      });
   } catch (error) {
     console.error(error);
     res.json({ status: false, message: "Something went wrong" });
