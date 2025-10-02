@@ -9,15 +9,14 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-
-const sendEmail = async ({ to, subject, text }) => {
+const sendEmail = async ({ to, subject, text, html }) => {
   try {
     const mailOptions = {
       from: `"Admin Portal" ${process.env.EMAIL_USER}`,
       to,
       subject,
       text,
-      
+      html,
     };
 
     const info = await transporter.sendMail(mailOptions);
