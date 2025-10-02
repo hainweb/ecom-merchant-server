@@ -5,28 +5,44 @@ const { ObjectId } = require("mongodb");
 const { response } = require("../app");
 
 module.exports = {
-  doadminSignup: (adminData) => {
-    return new Promise(async (resolve, reject) => {
-      let response1 = {};
-      let adminExists = await db
+  createMerchant: async (data) => {
+    try {
+      let {
+        Name,
+        BusinessName,
+        GSTNumber,
+        BusinessType,
+        Mobile,
+        Email,
+        Password,
+      } = data;
+
+      Password = await bcrypt.hash(Password, 10);
+      let newMerchant = {
+        Name,
+        BusinessName,
+        GSTNumber,
+        BusinessType,
+        Mobile,
+        Email,
+        Password,
+        isApproved: false,
+        isIntroSeen: false,
+      };
+
+      let res = await db
         .get()
         .collection(collection.ADMIN_COLLECTION)
-        .findOne({ Mobile: adminData.Mobile });
-      if (!adminExists) {
-        adminData.Password = await bcrypt.hash(adminData.Password, 10);
-        db.get()
-          .collection(collection.ADMIN_COLLECTION)
-          .insertOne(adminData)
-          .then((data) => {
-            response1.admin = adminData;
-            response1.status = true;
-            resolve(response1);
-          });
+        .insertOne(newMerchant);
+      if (res.acknowledged) {
+        newMerchant._id = res.insertedId;
+        return newMerchant;
       } else {
-        response1.status = false;
-        resolve(response1);
+        throw new Error("Failed to create merchant");
       }
-    });
+    } catch (error) {
+      throw new Error("Error creating merchant: " + error.message);
+    }
   },
   doadminLogin: (adminData) => {
     return new Promise(async (resolve, reject) => {
@@ -38,12 +54,14 @@ module.exports = {
         .findOne({ Email: adminData.Email });
       if (admin) {
         bcrypt.compare(adminData.Password, admin.Password).then((status) => {
-          if (status && !admin.isBlock) {
+          if (status && !admin.isBlock && admin.isApproved) {
             response.admin = admin;
             response.status = true;
             resolve(response);
           } else if (admin.isBlock) {
             resolve({ status: false, isBlock: true });
+          }else if(!admin.isApproved){
+            resolve({status:false,isApproved:false})
           } else {
             resolve({ status: false });
           }
@@ -54,7 +72,18 @@ module.exports = {
     });
   },
 
-  forgotPassword: async (email) => {
+  markIntroSeen: async (adminId) => {
+    const res = await db
+      .get()
+      .collection(collection.ADMIN_COLLECTION)
+      .updateOne(
+        { _id: new ObjectId(adminId) },
+        { $set: { isIntroSeen: true } }
+      );
+    return res;
+  },
+
+  checkMerchant: async (email) => {
     const admin = await db
       .get()
       .collection(collection.ADMIN_COLLECTION)
