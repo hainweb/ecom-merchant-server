@@ -109,9 +109,9 @@ exports.forgotPassword = async (req, res) => {
   forgetPssOtp = Math.floor(100000 + Math.random() * 900000);
   try {
     await sendEmail({
-  to: email,
-  subject: "Reset Your Password",
-  html: `
+      to: email,
+      subject: "Reset Your Password",
+      html: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin:auto; padding:20px; border:1px solid #eaeaea; border-radius:10px; background-color:#f9f9f9; text-align:center;">
       <h2 style="color:#333;">Password Reset Request</h2>
       <p>Hello,</p>
@@ -124,7 +124,7 @@ exports.forgotPassword = async (req, res) => {
       <p style="font-size: 12px; color: #777;">For your security, do not share this OTP with anyone.</p>
     </div>
   `,
-});
+    });
 
     res.json({ status: true, message: "OTP sent." });
   } catch (e) {
@@ -154,7 +154,7 @@ exports.sendOtp = async (req, res) => {
       <p>Thank you for registering as a merchant. Please use the OTP below to verify your email address:</p>
       <div style="margin: 20px 0; font-size: 24px; font-weight: bold; color: #2c7be5;">${otp}</div>
       <p style="color: #555;">This OTP is valid for the next 10 minutes. Do not share it with anyone.</p>
-      <p style="margin-top: 30px;">Best regards,<br/><strong>Admin Portal Team</strong></p>
+      <p style="margin-top: 30px;">Best regards,<br/><strong>Merchant Portal Team - Kingcart</strong></p>
       <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;" />
       <p style="font-size: 12px; color: #777;">If you did not request this verification, please ignore this email.</p>
     </div>
@@ -180,26 +180,21 @@ exports.createMerchant = async (req, res) => {
     const htmlMessage = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px; background-color: #f9f9f9;">
         <h2 style="color: #333;">Merchant Application Received</h2>
-        <p>Hello ${req.body.data.name || "Merchant"},</p>
+        <p>Hello ${req.body.data.Name || "Merchant"},</p>
         <p>Thank you for submitting your merchant application. We have successfully received your request and our team will review it shortly.</p>
         <p>We will notify you once your application has been reviewed.</p>
-        <p style="margin-top: 30px;">Best regards,<br/><strong>Admin Portal Team</strong></p>
+        <p style="margin-top: 30px;">Best regards,<br/><strong>Merchant Portal Team - Kingcart</strong></p>
         <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;" />
         <p style="font-size: 12px; color: #777;">If you did not submit this application, please ignore this email.</p>
       </div>
     `;
 
     sendEmail({
-      to: req.body.data.email,
+      to: req.body.data.Email,
       subject: "Your Merchant Application Has Been Received",
       html: htmlMessage,
     })
-      .then(() => {
-        console.log("Application confirmation email sent successfully");
-      })
-      .catch((err) => {
-        console.error("Error sending application email:", err);
-      });
+    
   } catch (error) {
     console.error(error);
     res.json({ status: false, message: "Something went wrong" });
@@ -221,7 +216,7 @@ exports.verifyOtp = (req, res, next) => {
     if (parseInt(userOtp, 10) !== otp) {
       console.log("otp not corretc");
 
-      return res.status(400).json({ status: false, message: "Invalid OTP" });
+      return res.json({ status: false, message: "Invalid OTP" });
     }
     console.log("otp verifued");
 
