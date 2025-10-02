@@ -1,6 +1,7 @@
 const adminHelpers = require("../helpers/admin-helpers");
 const sendEmail = require("../utils/mailer");
 let otp = "";
+let forgetPssOtp = "";
 
 exports.login = async (req, res) => {
   if (req.session.adminLockedOutUntil <= Date.now()) {
@@ -39,13 +40,35 @@ exports.login = async (req, res) => {
           message: "Too many failed attempts.",
         });
       }
+      if (!response.isApproved) {
+        return res.json({
+          status: false,
+          message: "This account is not approved",
+        });
+      }
       if (response.isBlock) {
         return res.json({ status: false, message: "This account is blocked" });
       }
-      return res.json({ status: false, message: "Invalid credentials." });
+      return res.json({
+        status: false,
+        message: "Incorrect email or password",
+      });
     }
   } catch (err) {
     res.status(500).json({ status: false, message: "Server error." });
+  }
+};
+
+exports.markIntroSeen = async (req, res) => {
+  try {
+    const adminId = req.session.adminsec._id;
+    const response = await adminHelpers.markIntroSeen(adminId);
+    if (response.acknowledged) {
+      req.session.adminsec.isIntroSeen = true;
+      res.json({ status: true });
+    }
+  } catch (error) {
+    res.status(500).json({ status: false, message: "Something went wrong" });
   }
 };
 
@@ -57,24 +80,60 @@ exports.logout = (req, res) => {
 
 exports.getAdmin = (req, res) => {
   if (req.session.adminsec) {
-    return res.json({ status: true, admin: req.session.adminsec });
+    if (req.session.adminsec.isApproved) {
+      return res.json({
+        status: true,
+        admin: req.session.adminsec,
+        isApproved: true,
+      });
+    } else {
+      return res.json({
+        status: true,
+        isApproved: false,
+        admin: req.session.adminsec,
+      });
+    }
+  } else {
+    res.json({ status: false });
   }
-  res.json({ status: false });
 };
 
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ message: "Email required" });
 
-  const exists = await adminHelpers.forgotPassword(email);
+  const exists = await adminHelpers.checkMerchant(email);
   if (!exists)
     return res.status(404).json({ status: false, message: "Email not found" });
 
-  otp = Math.floor(100000 + Math.random() * 900000);
+  forgetPssOtp = Math.floor(100000 + Math.random() * 900000);
   try {
     await sendEmail({
       to: email,
       subject: "Reset OTP",
+      text: `Your OTP is ${forgetPssOtp}`,
+    });
+    res.json({ status: true, message: "OTP sent." });
+  } catch (e) {
+    res.status(500).json({ status: false, message: "Failed to send OTP." });
+  }
+};
+exports.sendOtp = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: "Email required" });
+
+  const exists = await adminHelpers.checkMerchant(email);
+  if (exists) {
+    console.log("alredy");
+
+    return res.json({ status: false, message: "This email is already exist" });
+  }
+  otp = Math.floor(100000 + Math.random() * 900000);
+ 
+  try {
+    await sendEmail({
+      to: email,
+      subject: "Email verification for Merchant account",
       text: `Your OTP is ${otp}`,
     });
     res.json({ status: true, message: "OTP sent." });
@@ -83,14 +142,47 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-exports.verifyOtp = (req, res) => {
+exports.createMerchant = async (req, res) => {
+  try {
+    const response = await adminHelpers.createMerchant(req.body.data);
+    console.log(response);
+
+    req.session.adminloggedIn = true;
+    req.session.adminsec = response;
+    req.session.adminFailedAttempts = 0;
+    res.json({ status: true, message: "Merchant created" });
+
+
+    
+  } catch (error) {
+    console.error(error);
+    res.json({ status: false, message: "Something went wrong" });
+  }
+};
+
+exports.verifyOtp = (req, res, next) => {
   const { email, otp: userOtp } = req.body;
   if (!email || !userOtp) {
+    console.log("no email and opt");
+
     return res
       .status(400)
       .json({ status: false, message: "Email & OTP required" });
   }
-  if (parseInt(userOtp, 10) !== otp) {
+  if (req.body.data) {
+    console.log("this is merch");
+
+    if (parseInt(userOtp, 10) !== otp) {
+      console.log("otp not corretc");
+
+      return res.status(400).json({ status: false, message: "Invalid OTP" });
+    }
+    console.log("otp verifued");
+
+    next();
+    return;
+  }
+  if (parseInt(userOtp, 10) !== forgetPssOtp) {
     return res.status(400).json({ status: false, message: "Invalid OTP" });
   }
   res.json({ status: true, message: "OTP verified" });
