@@ -40,13 +40,13 @@ exports.login = async (req, res) => {
           message: "Too many failed attempts.",
         });
       }
-      if (!response.isApproved) {
+      if (!response.isApproved && !response.invalidCredentials) {
         return res.json({
           status: false,
           message: "This account is not approved",
         });
       }
-      if (response.isBlock) {
+      if (response.isBlock && !response.invalidCredentials) {
         return res.json({ status: false, message: "This account is blocked" });
       }
       return res.json({
@@ -78,7 +78,7 @@ exports.logout = (req, res) => {
   res.json({ status: true });
 };
 
-exports.getAdmin = (req, res) => {
+exports.getAdmin = async (req, res) => {
   if (req.session.adminsec) {
     if (req.session.adminsec.isApproved) {
       return res.json({
@@ -87,6 +87,18 @@ exports.getAdmin = (req, res) => {
         isApproved: true,
       });
     } else {
+      let merchantId = req.session.adminsec._id;
+      let updatedMerchant = await adminHelpers.getMerchant(merchantId);
+
+      if (updatedMerchant.isApproved) {
+        req.session.adminsec.isApproved = true;
+
+        return res.json({
+          status: true,
+          admin: req.session.adminsec,
+          isApproved: true,
+        });
+      }
       return res.json({
         status: true,
         isApproved: false,
@@ -170,7 +182,6 @@ exports.sendOtp = async (req, res) => {
 exports.createMerchant = async (req, res) => {
   try {
     const response = await adminHelpers.createMerchant(req.body.data);
-    console.log(response);
 
     req.session.adminloggedIn = true;
     req.session.adminsec = response;
@@ -193,8 +204,7 @@ exports.createMerchant = async (req, res) => {
       to: req.body.data.Email,
       subject: "Your Merchant Application Has Been Received",
       html: htmlMessage,
-    })
-    
+    });
   } catch (error) {
     console.error(error);
     res.json({ status: false, message: "Something went wrong" });
