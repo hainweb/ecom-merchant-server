@@ -12,6 +12,7 @@ module.exports = {
         BusinessName,
         GSTNumber,
         BusinessType,
+        BusinessAddress,
         Mobile,
         Email,
         Password,
@@ -23,11 +24,13 @@ module.exports = {
         BusinessName,
         GSTNumber,
         BusinessType,
+        BusinessAddress,
         Mobile,
         Email,
         Password,
         isApproved: false,
         isIntroSeen: false,
+        createdAt: new Date(),
       };
 
       let res = await db
@@ -60,14 +63,14 @@ module.exports = {
             resolve(response);
           } else if (admin.isBlock) {
             resolve({ status: false, isBlock: true });
-          } else if (!admin.isApproved ) {
+          } else if (!admin.isApproved) {
             resolve({ status: false, isApproved: false });
           } else {
-            resolve({ status: false, invalidCredentials:true });
+            resolve({ status: false, invalidCredentials: true });
           }
         });
       } else {
-        resolve({ status: false, invalidCredentials:true });
+        resolve({ status: false, invalidCredentials: true });
       }
     });
   },
