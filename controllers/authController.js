@@ -90,7 +90,7 @@ exports.getAdmin = async (req, res) => {
       let merchantId = req.session.adminsec._id;
       let updatedMerchant = await adminHelpers.getMerchant(merchantId);
 
-      if (updatedMerchant.isApproved) {
+      if (updatedMerchant?.isApproved) {
         req.session.adminsec.isApproved = true;
 
         return res.json({
