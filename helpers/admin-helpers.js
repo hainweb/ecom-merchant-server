@@ -60,14 +60,14 @@ module.exports = {
             resolve(response);
           } else if (admin.isBlock) {
             resolve({ status: false, isBlock: true });
-          }else if(!admin.isApproved){
-            resolve({status:false,isApproved:false})
+          } else if (!admin.isApproved ) {
+            resolve({ status: false, isApproved: false });
           } else {
-            resolve({ status: false });
+            resolve({ status: false, invalidCredentials:true });
           }
         });
       } else {
-        resolve({ status: false });
+        resolve({ status: false, invalidCredentials:true });
       }
     });
   },
@@ -81,6 +81,14 @@ module.exports = {
         { $set: { isIntroSeen: true } }
       );
     return res;
+  },
+
+  getMerchant: async (adminId) => {
+    const admin = await db
+      .get()
+      .collection(collection.ADMIN_COLLECTION)
+      .findOne({ _id: new ObjectId(adminId) });
+    return admin;
   },
 
   checkMerchant: async (email) => {
