@@ -97,6 +97,9 @@ db.connect((err) => {
 });
 
 // Routes
+app.get("/health", (req, res) => {
+  res.status(200).send("Ok");
+});
 app.use("/admin", adminRouter);
 app.use("/public", express.static(path.join(__dirname, "public")));
 
