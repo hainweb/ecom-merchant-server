@@ -1,9 +1,6 @@
 const adminHelpers = require("../helpers/admin-helpers");
 const orderHelpers = require("../helpers/order-helpers");
 const productHelpers = require("../helpers/product-helpers");
-let totalInStock = 0,
-  totalLowStock = 0,
-  totalOutOfStock = 0;
 
 exports.getTotalRevenue = async (req, res) => {
   const adminId = req.session.adminsec._id;
@@ -18,13 +15,15 @@ exports.getTotalRevenue = async (req, res) => {
     (data.deliveredRevenue / data.deliveredOrders).toFixed(2)
   );
 
-  const products = await productHelpers.getAllProducts();
+  const products = await productHelpers.getAdminProducts(adminId);
 
-  totalInStock = products.filter((product) => product.Quantity > 10).length;
-  totalLowStock = products.filter(
+  let totalInStock = products.filter((product) => product.Quantity > 10).length;
+  let totalLowStock = products.filter(
     (product) => product.Quantity <= 10 && product.Quantity > 0
   ).length;
-  totalOutOfStock = products.filter((product) => product.Quantity <= 0).length;
+  let totalOutOfStock = products.filter(
+    (product) => product.Quantity <= 0
+  ).length;
 
   res.json({
     pendingOrders,
